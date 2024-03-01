@@ -1,7 +1,9 @@
 const express = require('express');
 const app = express();
 const userRoutes = require('./user');
+const bodyParser = require('body-parser');
 
+app.use(express.json());
 app.use('/users', userRoutes);
 
 const port = process.env.PORT || 3000;
