@@ -143,7 +143,7 @@ router.delete("/:id", async (req, res) => {
     const rowsAffected = await deleteUserById(userId);
 
     if (rowsAffected === 1) {
-      res.status(204).send(); // Send a 204 No Content response if deletion is successful
+      res.status(204).send();
     } else {
       res.status(404).json({ message: "User not found" });
     }
@@ -153,7 +153,6 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// Function to delete a user by name
 async function deleteUserByName(name) {
     try {
       await client.connect();

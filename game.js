@@ -89,9 +89,7 @@ router.get("/name/:name", async (req, res) => {
 });
 
 //post api
-// Function to create a new game with validation
 async function createGame(name, likes, comments, price) {
-  // Check if name and price are provided and price is not negative
   if (!name || !price || price < 0) {
     throw new Error(
       "Invalid game data. Name and price are required, and price cannot be negative."
@@ -127,6 +125,63 @@ router.post("/", async (req, res) => {
   try {
     const newGame = await createGame(name, likes, comments, price);
     res.status(201).json(newGame);
+  } catch (error) {
+    console.error("Error:", error.message);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+//delete api
+async function deleteGameById(gameId) {
+  try {
+    const query = "DELETE FROM games WHERE id = $1";
+    const result = await client.query(query, [gameId]);
+    return result.rowCount;
+  } catch (error) {
+    console.error("Error deleting game:", error);
+    throw new Error("Internal server error");
+  }
+}
+
+router.delete("/:id", async (req, res) => {
+  const gameId = req.params.id;
+
+  try {
+    const rowsAffected = await deleteGameById(gameId);
+
+    if (rowsAffected === 1) {
+      res.status(204).send();
+    } else {
+      res.status(404).json({ message: "Game not found" });
+    }
+  } catch (error) {
+    console.error("Error:", error.message);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+async function deleteGameByName(gameName) {
+  try {
+    const query = "DELETE FROM games WHERE name = $1";
+    const result = await client.query(query, [gameName]);
+    return result.rowCount;
+  } catch (error) {
+    console.error("Error deleting game:", error);
+    throw new Error("Internal server error");
+  }
+}
+
+router.delete("/name/:name", async (req, res) => {
+  const gameName = req.params.name;
+
+  try {
+    const rowsAffected = await deleteGameByName(gameName);
+
+    if (rowsAffected === 1) {
+      res.status(204).send();
+    } else {
+      res.status(404).json({ message: "Game not found" });
+    }
   } catch (error) {
     console.error("Error:", error.message);
     res.status(500).json({ message: error.message });
