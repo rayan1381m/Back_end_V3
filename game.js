@@ -134,15 +134,21 @@ router.post("/", async (req, res) => {
 //delete api
 async function deleteGameById(gameId) {
   try {
-    const query = "DELETE FROM games WHERE id = $1";
-    const result = await client.query(query, [gameId]);
+    await client.connect();
+
+    const result = await client.query("DELETE FROM games WHERE id = $1", [
+      gameId,
+    ]);
     return result.rowCount;
   } catch (error) {
-    console.error("Error deleting game:", error);
+    console.error("Error querying PostgreSQL:", error);
     throw new Error("Internal server error");
+  } finally {
+    await client.end();
   }
 }
 
+//postman test: http://localhost:3000/games/7
 router.delete("/:id", async (req, res) => {
   const gameId = req.params.id;
 
@@ -162,15 +168,21 @@ router.delete("/:id", async (req, res) => {
 
 async function deleteGameByName(gameName) {
   try {
-    const query = "DELETE FROM games WHERE name = $1";
-    const result = await client.query(query, [gameName]);
+    await client.connect();
+
+    const result = await client.query("DELETE FROM games WHERE name = $1", [
+      gameName,
+    ]);
     return result.rowCount;
   } catch (error) {
-    console.error("Error deleting game:", error);
+    console.error("Error querying PostgreSQL:", error);
     throw new Error("Internal server error");
+  } finally {
+    await client.end();
   }
 }
 
+//postman test: http://localhost:3000/games/name/fifa 24
 router.delete("/name/:name", async (req, res) => {
   const gameName = req.params.name;
 
@@ -185,6 +197,111 @@ router.delete("/name/:name", async (req, res) => {
   } catch (error) {
     console.error("Error:", error.message);
     res.status(500).json({ message: error.message });
+  }
+});
+
+//put api
+router.put("/:id", async (req, res) => {
+  const gameId = req.params.id;
+  const { name, likes, comments, price } = req.body;
+
+  try {
+    await client.connect();
+
+    let query = "UPDATE games SET ";
+    const values = [gameId];
+    let index = 2;
+
+    if (name) {
+      query += `name = $${index}, `;
+      values.push(name);
+      index++;
+    }
+
+    if (likes !== undefined) {
+      query += `likes = $${index}, `;
+      values.push(likes);
+      index++;
+    }
+
+    if (comments) {
+      query += `comments = $${index}, `;
+      values.push(comments);
+      index++;
+    }
+
+    if (price !== undefined) {
+      query += `price = $${index}, `;
+      values.push(price);
+      index++;
+    }
+
+    query = query.slice(0, -2);
+
+    query += " WHERE id = $1 RETURNING *";
+
+    const result = await client.query(query, values);
+    const updatedGame = result.rows[0];
+
+    if (!updatedGame) {
+      return res.status(404).json({ message: "Game not found" });
+    }
+
+    res.json(updatedGame);
+  } catch (error) {
+    console.error("Error querying PostgreSQL:", error);
+    res.status(500).json({ message: "Internal server error" });
+  } finally {
+    await client.end();
+  }
+});
+
+//patch api
+//postman test: http://localhost:3000/games/4
+/*{
+    "price": 19.19
+}
+*/
+router.patch("/:id", async (req, res) => {
+  const gameId = req.params.id;
+  const { name, price } = req.body;
+
+  try {
+    await client.connect();
+
+    let query = "UPDATE games SET ";
+    const values = [gameId];
+    let index = 2;
+
+    if (name) {
+      query += `name = $${index}, `;
+      values.push(name);
+      index++;
+    }
+
+    if (price) {
+      query += `price = $${index}, `;
+      values.push(price);
+      index++;
+    }
+
+    query = query.slice(0, -2);
+
+    query += " WHERE id = $1 RETURNING *";
+
+    const result = await client.query(query, values);
+    const updatedGame = result.rows[0];
+
+    if (!updatedGame) {
+      return res.status(404).json({ message: "Game not found" });
+    }
+
+    res.json(updatedGame);
+  } catch (error) {
+    console.error("Error querying PostgreSQL:", error);
+    res.status(500).json({ message: "Internal server error" });
+  } finally {
+    await client.end();
   }
 });
 
