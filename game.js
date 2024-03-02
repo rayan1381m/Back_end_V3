@@ -14,7 +14,6 @@ const client = new Client({
   ssl: true,
 });
 
-// Connect to the database
 client.connect()
   .then(() => console.log('Connected to PostgreSQL'))
   .catch(err => console.error('Error connecting to PostgreSQL:', err));

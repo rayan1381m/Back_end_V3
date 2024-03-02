@@ -16,7 +16,6 @@ const client = new Client({
   ssl: true,
 });
 
-// Connect to the database
 client.connect()
   .then(() => console.log('Connected to PostgreSQL'))
   .catch(err => console.error('Error connecting to PostgreSQL:', err));
@@ -109,6 +108,27 @@ router.post("/", async (req, res) => {
   } catch (error) {
     console.error("Error:", error.message);
     res.status(500).json({ message: error.message });
+  }
+});
+
+router.post("/login", async (req, res) => {
+  const { name, password } = req.body;
+
+  try {
+    const user = await getUserByName(name);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+    if (user.password !== hashedPassword) {
+      return res.status(401).json({ message: "Invalid username or password" });
+    }
+
+    res.status(200).json({ message: "Login successful", user });
+  } catch (error) {
+    console.error("Error:", error.message);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
