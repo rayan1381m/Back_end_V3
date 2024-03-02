@@ -3,8 +3,7 @@ const router = express.Router();
 const { Client } = require("pg");
 require("dotenv").config();
 
-const { PGHOST, PGDATABASE, PGUSER, PGPASSWORD, PGPORT, ENDPOINT_ID } =
-  process.env;
+const { PGHOST, PGDATABASE, PGUSER, PGPASSWORD, PGPORT, ENDPOINT_ID } = process.env;
 
 const client = new Client({
   host: PGHOST,
@@ -15,40 +14,29 @@ const client = new Client({
   ssl: true,
 });
 
+// Connect to the database
+client.connect()
+  .then(() => console.log('Connected to PostgreSQL'))
+  .catch(err => console.error('Error connecting to PostgreSQL:', err));
+
 //get apis
 async function findGameById(gameId) {
   try {
-    await client.connect();
-
-    const result = await client.query("SELECT * FROM games WHERE id = $1", [
-      gameId,
-    ]);
-    const game = result.rows[0];
-
-    return game;
+    const result = await client.query("SELECT * FROM games WHERE id = $1", [gameId]);
+    return result.rows[0];
   } catch (error) {
     console.error("Error querying PostgreSQL:", error);
     throw new Error("Internal server error");
-  } finally {
-    await client.end();
   }
 }
 
 async function findGameByName(gameName) {
   try {
-    await client.connect();
-
-    const result = await client.query("SELECT * FROM games WHERE name = $1", [
-      gameName,
-    ]);
-    const game = result.rows[0];
-
-    return game;
+    const result = await client.query("SELECT * FROM games WHERE name = $1", [gameName]);
+    return result.rows[0];
   } catch (error) {
     console.error("Error querying PostgreSQL:", error);
     throw new Error("Internal server error");
-  } finally {
-    await client.end();
   }
 }
 
@@ -91,14 +79,10 @@ router.get("/name/:name", async (req, res) => {
 //post api
 async function createGame(name, likes, comments, price) {
   if (!name || !price || price < 0) {
-    throw new Error(
-      "Invalid game data. Name and price are required, and price cannot be negative."
-    );
+    throw new Error("Invalid game data. Name and price are required, and price cannot be negative.");
   }
 
   try {
-    await client.connect();
-
     const result = await client.query(
       "INSERT INTO games (name, likes, comments, price) VALUES ($1, $2, $3, $4) RETURNING *",
       [name, likes, comments, price]
@@ -107,8 +91,6 @@ async function createGame(name, likes, comments, price) {
   } catch (error) {
     console.error("Error querying PostgreSQL:", error);
     throw new Error("Internal server error");
-  } finally {
-    await client.end();
   }
 }
 
@@ -134,17 +116,11 @@ router.post("/", async (req, res) => {
 //delete api
 async function deleteGameById(gameId) {
   try {
-    await client.connect();
-
-    const result = await client.query("DELETE FROM games WHERE id = $1", [
-      gameId,
-    ]);
+    const result = await client.query("DELETE FROM games WHERE id = $1", [gameId]);
     return result.rowCount;
   } catch (error) {
     console.error("Error querying PostgreSQL:", error);
     throw new Error("Internal server error");
-  } finally {
-    await client.end();
   }
 }
 
@@ -168,17 +144,11 @@ router.delete("/:id", async (req, res) => {
 
 async function deleteGameByName(gameName) {
   try {
-    await client.connect();
-
-    const result = await client.query("DELETE FROM games WHERE name = $1", [
-      gameName,
-    ]);
+    const result = await client.query("DELETE FROM games WHERE name = $1", [gameName]);
     return result.rowCount;
   } catch (error) {
     console.error("Error querying PostgreSQL:", error);
     throw new Error("Internal server error");
-  } finally {
-    await client.end();
   }
 }
 
@@ -206,8 +176,6 @@ router.put("/:id", async (req, res) => {
   const { name, likes, comments, price } = req.body;
 
   try {
-    await client.connect();
-
     let query = "UPDATE games SET ";
     const values = [gameId];
     let index = 2;
@@ -251,8 +219,6 @@ router.put("/:id", async (req, res) => {
   } catch (error) {
     console.error("Error querying PostgreSQL:", error);
     res.status(500).json({ message: "Internal server error" });
-  } finally {
-    await client.end();
   }
 });
 
@@ -267,8 +233,6 @@ router.patch("/:id", async (req, res) => {
   const { name, price } = req.body;
 
   try {
-    await client.connect();
-
     let query = "UPDATE games SET ";
     const values = [gameId];
     let index = 2;
@@ -300,8 +264,6 @@ router.patch("/:id", async (req, res) => {
   } catch (error) {
     console.error("Error querying PostgreSQL:", error);
     res.status(500).json({ message: "Internal server error" });
-  } finally {
-    await client.end();
   }
 });
 

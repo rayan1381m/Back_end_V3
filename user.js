@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { Client } = require("pg");
 require("dotenv").config();
+const crypto = require("crypto");
 
 const { PGHOST, PGDATABASE, PGUSER, PGPASSWORD, PGPORT, ENDPOINT_ID } =
   process.env;
@@ -15,20 +16,19 @@ const client = new Client({
   ssl: true,
 });
 
+// Connect to the database
+client.connect()
+  .then(() => console.log('Connected to PostgreSQL'))
+  .catch(err => console.error('Error connecting to PostgreSQL:', err));
+
 //get apis
 async function getUserById(userId) {
   try {
-    await client.connect();
-
-    const result = await client.query("SELECT * FROM users WHERE id = $1", [
-      userId,
-    ]);
+    const result = await client.query("SELECT * FROM users WHERE id = $1", [userId]);
     return result.rows[0];
   } catch (error) {
     console.error("Error querying PostgreSQL:", error);
     throw new Error("Internal server error");
-  } finally {
-    await client.end();
   }
 }
 
@@ -52,17 +52,11 @@ router.get("/:id", async (req, res) => {
 
 async function getUserByName(name) {
   try {
-    await client.connect();
-
-    const result = await client.query("SELECT * FROM users WHERE name = $1", [
-      name,
-    ]);
+    const result = await client.query("SELECT * FROM users WHERE name = $1", [name]);
     return result.rows[0];
   } catch (error) {
     console.error("Error querying PostgreSQL:", error);
     throw new Error("Internal server error");
-  } finally {
-    await client.end();
   }
 }
 
@@ -87,18 +81,16 @@ router.get("/name/:name", async (req, res) => {
 //post api
 async function createUser(name, isAdmin, password) {
   try {
-    await client.connect();
+    const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
 
     const result = await client.query(
       "INSERT INTO users (name, is_admin, password) VALUES ($1, $2, $3) RETURNING *",
-      [name, isAdmin, password]
+      [name, isAdmin, hashedPassword]
     );
     return result.rows[0];
   } catch (error) {
     console.error("Error querying PostgreSQL:", error);
     throw new Error("Internal server error");
-  } finally {
-    await client.end();
   }
 }
 
@@ -123,15 +115,11 @@ router.post("/", async (req, res) => {
 //delete api
 async function deleteUserById(id) {
   try {
-    await client.connect();
-
     const result = await client.query("DELETE FROM users WHERE id = $1", [id]);
     return result.rowCount;
   } catch (error) {
     console.error("Error querying PostgreSQL:", error);
     throw new Error("Internal server error");
-  } finally {
-    await client.end();
   }
 }
 
@@ -155,15 +143,11 @@ router.delete("/:id", async (req, res) => {
 
 async function deleteUserByName(name) {
     try {
-      await client.connect();
-  
       const result = await client.query("DELETE FROM users WHERE name = $1", [name]);
       return result.rowCount;
     } catch (error) {
       console.error("Error querying PostgreSQL:", error);
       throw new Error("Internal server error");
-    } finally {
-      await client.end();
     }
   }
   
@@ -200,8 +184,6 @@ router.put("/:id", async (req, res) => {
   const { name, isAdmin, password } = req.body;
 
   try {
-    await client.connect();
-
     let query = "UPDATE users SET ";
     const values = [userId];
     let index = 2;
@@ -240,8 +222,6 @@ router.put("/:id", async (req, res) => {
   } catch (error) {
     console.error("Error querying PostgreSQL:", error);
     res.status(500).json({ message: "Internal server error" });
-  } finally {
-    await client.end();
   }
 });
 
