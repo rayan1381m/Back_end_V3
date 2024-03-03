@@ -75,6 +75,32 @@ router.get("/name/:name", async (req, res) => {
   }
 });
 
+async function getFilteredGames(minPrice) {
+  let query = "SELECT * FROM games";
+  const values = [];
+
+  if (minPrice) {
+    query += " WHERE price >= $1";
+    values.push(parseFloat(minPrice));
+  }
+
+  const result = await client.query(query, values);
+  return result.rows;
+}
+
+//postman test: http://localhost:3000/games/?minPrice=10
+router.get("/", async (req, res) => {
+  const { minPrice } = req.query;
+
+  try {
+    const games = await getFilteredGames(minPrice);
+    res.json(games);
+  } catch (error) {
+    console.error("Error querying PostgreSQL:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 //post api
 async function createGame(name, likes, comments, price) {
   if (!name || !price || price < 0) {
