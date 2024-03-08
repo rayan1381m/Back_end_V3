@@ -245,4 +245,23 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+//postman test: http://localhost:3000/getuser {
+  /*  "name": "Rayan"
+  }*/
+router.post("/getuser", async (req, res) => {
+  const { name } = req.body;
+
+  try {
+    const user = await getUserByName(name);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error("Error:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 module.exports = router;
