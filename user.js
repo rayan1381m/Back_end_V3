@@ -266,23 +266,28 @@ router.put("/:id", async (req, res) => {
 //postman test: http://localhost:3000/getuser {
 /*  "name": "Rayan"
   }*/
-router.post("/getuser", async (req, res) => {
-  const { name, password } = req.body;
-
-  try {
-    const user = await getUserByName(name);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    } else if (user.password !== password) {
-      return res.status(404).json({ message: "Wrong password" });
+  router.post("/getuser", async (req, res) => {
+    const { name, password } = req.body;
+  
+    try {
+      const user = await getUserByName(name);
+  
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      } else if (user.password !== password) {
+        return res.status(404).json({ message: "Wrong password" });
+      }
+  
+      if (user.is_admin) {
+        return res.json({ isAdmin: true });
+      } else {
+        return res.json({ isAdmin: false });
+      }
+    } catch (error) {
+      console.error("Error:", error.message);
+      res.status(500).json({ message: "Internal server error" });
     }
-
-    res.json(user);
-  } catch (error) {
-    console.error("Error:", error.message);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
+  });
+  
 
 module.exports = router;
