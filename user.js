@@ -16,14 +16,17 @@ const client = new Client({
   ssl: true,
 });
 
-client.connect()
-  .then(() => console.log('Connected to PostgreSQL'))
-  .catch(err => console.error('Error connecting to PostgreSQL:', err));
+client
+  .connect()
+  .then(() => console.log("Connected to PostgreSQL"))
+  .catch((err) => console.error("Error connecting to PostgreSQL:", err));
 
 //get apis
 async function getUserById(userId) {
   try {
-    const result = await client.query("SELECT * FROM users WHERE id = $1", [userId]);
+    const result = await client.query("SELECT * FROM users WHERE id = $1", [
+      userId,
+    ]);
     return result.rows[0];
   } catch (error) {
     console.error("Error querying PostgreSQL:", error);
@@ -51,7 +54,9 @@ router.get("/:id", async (req, res) => {
 
 async function getUserByName(name) {
   try {
-    const result = await client.query("SELECT * FROM users WHERE name = $1", [name]);
+    const result = await client.query("SELECT * FROM users WHERE name = $1", [
+      name,
+    ]);
     return result.rows[0];
   } catch (error) {
     console.error("Error querying PostgreSQL:", error);
@@ -80,11 +85,20 @@ router.get("/name/:name", async (req, res) => {
 //post api
 async function createUser(name, isAdmin, password) {
   try {
-    const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+    //const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+
+    const userExists = await client.query(
+      "SELECT * FROM users WHERE name = $1",
+      [name]
+    );
+
+    if (userExists.rows.length > 0) {
+      throw new Error("Username already exists");
+    }
 
     const result = await client.query(
       "INSERT INTO users (name, is_admin, password) VALUES ($1, $2, $3) RETURNING *",
-      [name, isAdmin, hashedPassword]
+      [name, isAdmin, password]
     );
     return result.rows[0];
   } catch (error) {
@@ -120,7 +134,10 @@ router.post("/login", async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+    const hashedPassword = crypto
+      .createHash("sha256")
+      .update(password)
+      .digest("hex");
     if (user.password !== hashedPassword) {
       return res.status(401).json({ message: "Invalid username or password" });
     }
@@ -162,33 +179,34 @@ router.delete("/:id", async (req, res) => {
 });
 
 async function deleteUserByName(name) {
-    try {
-      const result = await client.query("DELETE FROM users WHERE name = $1", [name]);
-      return result.rowCount;
-    } catch (error) {
-      console.error("Error querying PostgreSQL:", error);
-      throw new Error("Internal server error");
-    }
+  try {
+    const result = await client.query("DELETE FROM users WHERE name = $1", [
+      name,
+    ]);
+    return result.rowCount;
+  } catch (error) {
+    console.error("Error querying PostgreSQL:", error);
+    throw new Error("Internal server error");
   }
-  
+}
+
 //postman test: http://localhost:3000/users/name/User3
-  router.delete("/name/:name", async (req, res) => {
-    const name = req.params.name;
-  
-    try {
-      const rowsAffected = await deleteUserByName(name);
-  
-      if (rowsAffected === 1) {
-        res.status(204).send();
-      } else {
-        res.status(404).json({ message: "User not found" });
-      }
-    } catch (error) {
-      console.error("Error:", error.message);
-      res.status(500).json({ message: error.message });
+router.delete("/name/:name", async (req, res) => {
+  const name = req.params.name;
+
+  try {
+    const rowsAffected = await deleteUserByName(name);
+
+    if (rowsAffected === 1) {
+      res.status(204).send();
+    } else {
+      res.status(404).json({ message: "User not found" });
     }
-  });
-  
+  } catch (error) {
+    console.error("Error:", error.message);
+    res.status(500).json({ message: error.message });
+  }
+});
 
 //put api
 
@@ -233,7 +251,7 @@ router.put("/:id", async (req, res) => {
 
     const result = await client.query(query, values);
     const updatedUser = result.rows[0];
-    
+
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -246,17 +264,20 @@ router.put("/:id", async (req, res) => {
 });
 
 //postman test: http://localhost:3000/getuser {
-  /*  "name": "Rayan"
+/*  "name": "Rayan"
   }*/
 router.post("/getuser", async (req, res) => {
-  const { name } = req.body;
+  const { name, password } = req.body;
 
   try {
     const user = await getUserByName(name);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    } else if (user.password !== password) {
+      return res.status(404).json({ message: "Wrong password" });
     }
+
     res.json(user);
   } catch (error) {
     console.error("Error:", error.message);
