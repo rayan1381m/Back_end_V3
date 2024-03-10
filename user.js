@@ -14,6 +14,8 @@ const client = new Client({
   user: PGUSER,
   password: PGPASSWORD,
   ssl: true,
+  // idleTimeoutMillis: 0,
+  // connectionTimeoutMillis: 0,
 });
 
 client
@@ -217,52 +219,97 @@ router.delete("/name/:name", async (req, res) => {
     "password": "newpassword123"
 }
 */
-router.put("/:id", async (req, res) => {
-  const userId = req.params.id;
-  const { name, isAdmin, password } = req.body;
+//-----commented because when i call put api always get put with id-----
+// router.put("/:id", async (req, res) => {
+//   const userId = req.params.id;
+//   const { name, isAdmin, password } = req.body;
 
+//   try {
+//     let query = "UPDATE users SET ";
+//     const values = [userId];
+//     let index = 2;
+
+//     if (name) {
+//       query += `name = $${index}, `;
+//       values.push(name);
+//       index++;
+//     }
+
+//     if (isAdmin !== undefined) {
+//       query += `is_admin = $${index}, `;
+//       values.push(isAdmin);
+//       index++;
+//     }
+
+//     if (password) {
+//       query += `password = $${index}, `;
+//       values.push(password);
+//       index++;
+//     }
+
+//     //if we have to snage more than one field, its remove comma and space to prevent mistake
+//     query = query.slice(0, -2);
+
+//     query += " WHERE id = $1 RETURNING *";
+
+//     const result = await client.query(query, values);
+//     const updatedUser = result.rows[0];
+
+//     if (!updatedUser) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     res.json(updatedUser);
+//   } catch (error) {
+//     console.error("Error querying PostgreSQL:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// });
+
+router.put("/:username", async (req, res) => {
+  const username = req.params.username;
+  const { name, password } = req.body;
+ 
   try {
-    let query = "UPDATE users SET ";
-    const values = [userId];
-    let index = 2;
-
-    if (name) {
-      query += `name = $${index}, `;
-      values.push(name);
-      index++;
-    }
-
-    if (isAdmin !== undefined) {
-      query += `is_admin = $${index}, `;
-      values.push(isAdmin);
-      index++;
-    }
-
-    if (password) {
-      query += `password = $${index}, `;
-      values.push(password);
-      index++;
-    }
-
-    //if we have to snage more than one field, its remove comma and space to prevent mistake
-    query = query.slice(0, -2);
-
-    query += " WHERE id = $1 RETURNING *";
-
-    const result = await client.query(query, values);
-    const updatedUser = result.rows[0];
-
-    if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.json(updatedUser);
+     let query = "UPDATE users SET ";
+     const values = [username];
+     let index = 2;
+ 
+     if (name) {
+       query += `name = $${index}, `;
+       values.push(name);
+       index++;
+     }
+ 
+     if (password) {
+       query += `password = $${index}, `;
+       values.push(password);
+       index++;
+     }
+ 
+     if (index === 2) {
+       return res.status(400).json({ message: "No fields to update" });
+     }
+ 
+     // Remove the trailing comma and space
+     query = query.slice(0, -2);
+ 
+     query += " WHERE name = $1 RETURNING *";
+ 
+     const result = await client.query(query, values);
+     const updatedUser = result.rows[0];
+ 
+     if (!updatedUser) {
+       return res.status(404).json({ message: "User not found" });
+     }
+ 
+     res.json(updatedUser);
   } catch (error) {
-    console.error("Error querying PostgreSQL:", error);
-    res.status(500).json({ message: "Internal server error" });
+     console.error("Error querying PostgreSQL:", error);
+     res.status(500).json({ message: "Internal server error" });
   }
-});
-
+ });
+ 
 //postman test: http://localhost:3000/getuser {
 /*  "name": "Rayan"
   }*/

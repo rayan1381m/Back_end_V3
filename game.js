@@ -12,6 +12,8 @@ const client = new Client({
   user: PGUSER,
   password: PGPASSWORD,
   ssl: true,
+  // idleTimeoutMillis: 0,
+  // connectionTimeoutMillis: 0,
 });
 
 client.connect()
@@ -29,15 +31,6 @@ async function findGameById(gameId) {
   }
 }
 
-async function findGameByName(gameName) {
-  try {
-    const result = await client.query("SELECT * FROM games WHERE name = $1", [gameName]);
-    return result.rows[0];
-  } catch (error) {
-    console.error("Error querying PostgreSQL:", error);
-    throw new Error("Internal server error");
-  }
-}
 
 //postman test: http://localhost:3000/games/2
 router.get("/:id", async (req, res) => {
@@ -56,6 +49,16 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
+async function findGameByName(gameName) {
+  try {
+    const result = await client.query("SELECT * FROM games WHERE name = $1", [gameName]);
+    return result.rows[0];
+  } catch (error) {
+    console.error("Error querying PostgreSQL:", error);
+    throw new Error("Internal server error");
+  }
+}
 
 //postman test: http://localhost:3000/games/name/Dota 2
 router.get("/name/:name", async (req, res) => {
