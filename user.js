@@ -24,6 +24,27 @@ client
   .catch((err) => console.error("Error connecting to PostgreSQL:", err));
 
 //get apis
+async function getAllUsers() {
+  try {
+    const result = await client.query("SELECT * FROM users");
+    return result.rows;
+  } catch (error) {
+    console.error("postgres nmitoone dg:", error);
+    throw new Error("Internal server error");
+  }
+}
+
+//postman test: http://localhost:3000/users
+router.get("/", async (req, res) => {
+  try {
+    const users = await getAllUsers();
+    res.json(users);
+  } catch (error) {
+    console.error("Error:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 async function getUserIdByName(name) {
   try {
     const result = await client.query("SELECT id FROM users WHERE name = $1", [
