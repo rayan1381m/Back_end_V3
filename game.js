@@ -21,6 +21,27 @@ client.connect()
   .catch(err => console.error('Error connecting to PostgreSQL:', err));
 
 //get apis
+async function getAllGames() {
+  try {
+     const result = await client.query("SELECT * FROM games");
+     return result.rows;
+  } catch (error) {
+     console.error("Error querying PostgreSQL:", error);
+     throw new Error("Internal server error");
+  }
+ }
+ 
+ //postman test: http://localhost:3000/games
+ router.get("/", async (req, res) => {
+  try {
+     const games = await getAllGames();
+     res.json(games);
+  } catch (error) {
+     console.error("Error:", error.message);
+     res.status(500).json({ message: "Internal server error" });
+  }
+ });
+
 async function findGameById(gameId) {
   try {
     const result = await client.query("SELECT * FROM games WHERE id = $1", [gameId]);

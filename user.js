@@ -271,6 +271,13 @@ router.put("/:username", async (req, res) => {
   const { name, password } = req.body;
  
   try {
+     const checkUsernameQuery = "SELECT * FROM users WHERE name = $1";
+     const checkUsernameResult = await client.query(checkUsernameQuery, [name]);
+ 
+     if (checkUsernameResult.rowCount > 0 && checkUsernameResult.rows[0].name !== username) {
+       return res.status(400).json({ message: "Username already exists" });
+     }
+ 
      let query = "UPDATE users SET ";
      const values = [username];
      let index = 2;
@@ -291,9 +298,7 @@ router.put("/:username", async (req, res) => {
        return res.status(400).json({ message: "No fields to update" });
      }
  
-     // Remove the trailing comma and space
      query = query.slice(0, -2);
- 
      query += " WHERE name = $1 RETURNING *";
  
      const result = await client.query(query, values);
@@ -309,6 +314,7 @@ router.put("/:username", async (req, res) => {
      res.status(500).json({ message: "Internal server error" });
   }
  });
+ 
  
 //postman test: http://localhost:3000/getuser {
 /*  "name": "Rayan"
