@@ -14,8 +14,8 @@ const client = new Client({
   user: PGUSER,
   password: PGPASSWORD,
   ssl: true,
-  // idleTimeoutMillis: 0,
-  // connectionTimeoutMillis: 0,
+  idleTimeoutMillis: 0,
+  connectionTimeoutMillis: 0,
 });
 
 client
@@ -24,6 +24,49 @@ client
   .catch((err) => console.error("Error connecting to PostgreSQL:", err));
 
 //get apis
+async function getUserIdByName(name) {
+  try {
+    const result = await client.query("SELECT id FROM users WHERE name = $1", [
+      name,
+    ]);
+    return result.rows[0].id;
+  } catch (error) {
+    console.error("Error querying PostgreSQL:", error);
+    throw new Error("Internal server error");
+  }
+}
+
+async function getGamesForUser(userId) {
+  try {
+    const result = await client.query(
+      "SELECT g.name FROM games g JOIN user_inventory ui ON g.id = ui.game_id WHERE ui.user_id = $1",
+      [userId]
+    );
+    return result.rows;
+  } catch (error) {
+    console.error("Error querying PostgreSQL:", error);
+    throw new Error("Internal server error");
+  }
+}
+
+router.get("/:name/games", async (req, res) => {
+  const name = req.params.name;
+
+  try {
+    const userId = await getUserIdByName(name);
+
+    if (!userId) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const games = await getGamesForUser(userId);
+    res.json(games);
+  } catch (error) {
+    console.error("Error:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 async function getUserById(userId) {
   try {
     const result = await client.query("SELECT * FROM users WHERE id = $1", [

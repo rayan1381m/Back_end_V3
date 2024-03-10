@@ -12,8 +12,8 @@ const client = new Client({
   user: PGUSER,
   password: PGPASSWORD,
   ssl: true,
-  // idleTimeoutMillis: 0,
-  // connectionTimeoutMillis: 0,
+  idleTimeoutMillis: 0,
+  connectionTimeoutMillis: 0,
 });
 
 client.connect()
