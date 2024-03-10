@@ -38,10 +38,13 @@ async function getUserIdByName(name) {
 
 async function getGamesForUser(userId) {
   try {
-    const result = await client.query(
-      "SELECT g.name FROM games g JOIN user_inventory ui ON g.id = ui.game_id WHERE ui.user_id = $1",
-      [userId]
-    );
+    const query = `
+      SELECT g.name, g.likes, g.comments, g.price
+      FROM games g
+      JOIN user_inventory ui ON g.id = ui.game_id
+      WHERE ui.user_id = $1
+    `;
+    const result = await client.query(query, [userId]);
     return result.rows;
   } catch (error) {
     console.error("Error querying PostgreSQL:", error);
